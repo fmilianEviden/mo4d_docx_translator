@@ -4,6 +4,7 @@ import time
 from queue import Queue
 
 from docx import Document
+from itertools import chain
 from requests import request, exceptions
 
 from utils.BuildResolve import resolve_route
@@ -68,7 +69,9 @@ class Translate:
         print(f'Page length --> {len(text)}')
 
         if len(text) > 5000:
-            translate = self.split_text(text)
+            page = self.split_large_page(page)
+            translate = self.split_text(page)
+            page = list(chain.from_iterable(page))
         else:
             translate = self.post_request(text=f"""{text}""")
 
@@ -84,24 +87,34 @@ class Translate:
 
         return doc
 
-    def split_text(self, text: str, part: int = 5000):
-        print('Splitting page...')
-
-        split = text[2:-2].split('], [')
-        concat = ''
-        output = []
-        for i in split:
-            concat += f'[{i}], '
-            if len(concat) >= part:
-                output.append(concat[:-2])
-                concat = ''
-        output.append(concat[:-2])
+    def split_text(self, page):
 
         trim_list = []
-        for trim in output:
-            trim_list.append(self.post_request(text=f"""[{trim}]"""))
+        for trim in page:
+            text = str(json.dumps(trim))
+            trim_list.append(self.post_request(text=f"""{text}"""))
         translate = []
         for t in trim_list:
             translate += t
 
         return translate
+
+    @staticmethod
+    def split_large_page(page, max_length=5000):
+        split = []
+        current_chunk = []
+        current_length = 0
+
+        for item in page:
+            current_chunk.append(item)
+            current_length += len(str(item))
+
+            if current_length > max_length:
+                split.append(current_chunk)
+                current_chunk = []
+                current_length = 0
+
+        if current_chunk:
+            split.append(current_chunk)
+
+        return split

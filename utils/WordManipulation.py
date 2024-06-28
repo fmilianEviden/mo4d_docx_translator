@@ -8,14 +8,16 @@ from docx.shared import Inches
 
 h1_counter = 0
 
+
 def check_content(content: str) -> bool:
-    h1_list = ['documento técnico - ', 'document technique - ']
+    h1_list = ['technical document -', 'documento técnico - ', 'document technique - ']
 
     content_lower = content.lower()
     for item in h1_list:
         if item in content_lower:
             return True
     return False
+
 
 def add_element_to_word(content, style, doc: Document, styles_dict: dict):
     global h1_counter
@@ -27,11 +29,6 @@ def add_element_to_word(content, style, doc: Document, styles_dict: dict):
     else:
         if content == "":
             return doc
-        elif content.startswith(" Technical Document - "):
-            content = content.replace(" Technical Document - ", "")
-            style_name = styles_dict.get("h1")
-            h1_counter += 1
-            content = f"{h1_counter}. {content}"
         elif check_content(content):
             content = content.split('-')[1].strip()
             style_name = styles_dict.get("h1")
